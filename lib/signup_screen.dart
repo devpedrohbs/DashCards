@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Importe o Firebase Auth
+import 'package:cloud_firestore/cloud_firestore.dart'; // Importe o Firestore para salvar dados do usuário
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -13,7 +15,12 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
- @override
+  // Instância do Firebase Authentication
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  // Instância do Firebase Firestore
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -21,10 +28,52 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
-  void _signup() {
+  void _signup() async { // Tornar a função assíncrona
     if (_formKey.currentState!.validate()) {
-      print('Signup attempt with Email: ${_emailController.text}');
-      Navigator.pop(context);
+      try {
+        // Tenta criar um novo usuário com email e senha
+        UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        // Se o usuário foi criado com sucesso
+        if (userCredential.user != null) {
+          final String uid = userCredential.user!.uid;
+          final String email = userCredential.user!.email!;
+
+          // Salva os dados do usuário no Firestore usando o UID como ID do documento
+          await _firestore.collection('users').doc(uid).set({
+            'email': email,
+            'name': 'Usuário Dashcards', // Nome padrão, pode ser alterado posteriormente
+            'createdAt': Timestamp.now(),
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Conta criada com sucesso!')),
+          );
+          // Navega para a tela inicial após o cadastro
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      } on FirebaseAuthException catch (e) {
+        String message;
+        if (e.code == 'weak-password') {
+          message = 'A senha fornecida é muito fraca.';
+        } else if (e.code == 'email-already-in-use') {
+          message = 'Já existe uma conta para esse endereço de e-mail.';
+        } else {
+          message = 'Erro ao criar conta: ${e.message}';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+        print('Erro de autenticação: ${e.code} - ${e.message}');
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ocorreu um erro inesperado: $e')),
+        );
+        print('Erro inesperado: $e');
+      }
     }
   }
 
@@ -66,7 +115,7 @@ class _SignupScreenState extends State<SignupScreen> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 30.0),
-              child: SingleChildScrollView( 
+              child: SingleChildScrollView(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top),
                   child: IntrinsicHeight(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Importe o Firebase Auth
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,6 +13,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  // Instância do Firebase Authentication
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -19,13 +23,43 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
+  void _login() async { // Tornar a função assíncrona
     if (_formKey.currentState!.validate()) {
-      print('Login attempt with Email: ${_emailController.text}');
-      Navigator.pushReplacementNamed(context, '/home');
+      try {
+        // Tenta fazer login com email e senha
+        await _auth.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Login realizado com sucesso!')),
+        );
+        // Navega para a tela inicial após o login
+        Navigator.pushReplacementNamed(context, '/home');
+      } on FirebaseAuthException catch (e) {
+        String message;
+        if (e.code == 'user-not-found') {
+          message = 'Nenhum usuário encontrado para esse e-mail.';
+        } else if (e.code == 'wrong-password') {
+          message = 'Senha incorreta para esse e-mail.';
+        } else if (e.code == 'invalid-email') {
+          message = 'O formato do e-mail é inválido.';
+        } else {
+          message = 'Erro ao fazer login: ${e.message}';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+        print('Erro de autenticação: ${e.code} - ${e.message}');
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Ocorreu um erro inesperado: $e')),
+        );
+        print('Erro inesperado: $e');
+      }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {

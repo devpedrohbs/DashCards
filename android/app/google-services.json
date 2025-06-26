@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "899004228841",
+    "project_id": "dashcards-dd719",
+    "storage_bucket": "dashcards-dd719.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:899004228841:android:3f33de4b7c88e30f8c7c78",
+        "android_client_info": {
+          "package_name": "com.example.dashcards"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD5TgIT1F_21WX7M2X5eoTmxDL8Np4ugC0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

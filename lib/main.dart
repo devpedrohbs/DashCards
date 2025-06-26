@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Importe o Firebase Auth
+import 'firebase_options.dart';
+
 import 'login_screen.dart';
 import 'signup_screen.dart';
 import 'home_screen.dart';
@@ -9,7 +13,11 @@ import 'edit_profile_screen.dart';
 import 'create_dashcard_screen.dart';
 
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 
@@ -64,7 +72,22 @@ class MyApp extends StatelessWidget {
           contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 25),
         ),
       ),
-      home: const InitialScreen(),
+      // A tela inicial agora depende do estado de autenticação
+      home: StreamBuilder<User?>( // Ouve as mudanças no estado de autenticação
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const CircularProgressIndicator(); // Exibe um indicador de carregamento
+          }
+          if (snapshot.hasData) {
+            // Se houver dados (usuário logado), vai para a tela principal
+            return const HomeScreen();
+          } else {
+            // Caso contrário (usuário não logado), vai para a tela inicial de login/cadastro
+            return const InitialScreen();
+          }
+        },
+      ),
       routes: {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
@@ -79,6 +102,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// A InitialScreen original permanece, mas agora é acessada via rota ou como fallback
 class InitialScreen extends StatelessWidget {
   const InitialScreen({super.key});
 
